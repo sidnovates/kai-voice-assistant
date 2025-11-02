@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>KAI - Crystal Orb</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com">
+    <style>
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        body {
+        -webkit-app-region: drag;
+        background: transparent;
+        margin: 0;
+        overflow: hidden;
+        }
+        .no-drag { /* <-- ADD THIS */
+            -webkit-app-region: no-drag;
+        }
+    </style>
+</head>
+<body style="-webkit-app-region: drag">
+    <canvas id="crystal-canvas" class="no-drag"></canvas>>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script>
+        // --- 0. SIMPLEX NOISE HELPER ---
+        // A self-contained simplex noise implementation to create organic-looking procedural noise.
+        // This is used to deform the orb's geometry for a "crazy" crystal look.
+            // FIX #2: Wrap the entire script in a DOMContentLoaded listener
+    window.addEventListener('DOMContentLoaded', () => {
+        const SimplexNoise = (function() {
+            /* ... Simplex noise implementation ... */
+            /* (Implementation is included at the end of the script for brevity here) */
+            const F2 = 0.5 * (Math.sqrt(3.0) - 1.0),
+                  G2 = (3.0 - Math.sqrt(3.0)) / 6.0,
+                  F3 = 1.0 / 3.0,
+                  G3 = 1.0 / 6.0,
+                  F4 = (Math.sqrt(5.0) - 1.0) / 4.0,
+                  G4 = (5.0 - Math.sqrt(5.0)) / 20.0;
+            function SimplexNoise(random) {
+                if (random === undefined) random = Math.random;
+                this.p = new Uint8Array(256);
+                this.perm = new Uint8Array(512);
+                this.permMod12 = new Uint8Array(512);
+                for (let i = 0; i < 256; i++) {
+                    this.p[i] = random() * 256;
+                }
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = this.p[i & 255];
+                    this.permMod12[i] = this.perm[i] % 12;
+                }
+            }
+            SimplexNoise.prototype = {
+                grad3: new Float32Array([1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0, 1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1]),
+                noise3D: function(xin, yin, zin) {
+                    let n0, n1, n2, n3;
+                    const s = (xin + yin + zin) * F3;
+                    const i = Math.floor(xin + s), j = Math.floor(yin + s), k = Math.floor(zin + s);
+                    const t = (i + j + k) * G3;
+                    const X0 = i - t, Y0 = j - t, Z0 = k - t;
+                    const x0 = xin - X0, y0 = yin - Y0, z0 = zin - Z0;
+                    let i1, j1, k1, i2, j2, k2;
+                    if (x0 >= y0) {
+                        if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+                        else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+                        else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
+                    } else {
+                        if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
+                        else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
+                        else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+                    }
+                    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
+                    const x2 = x0 - i2 + 2.0 * G3, y2 = y0 - j2 + 2.0 * G3, z2 = z0 - k2 + 2.0 * G3;
+                    const x3 = x0 - 1.0 + 3.0 * G3, y3 = y0 - 1.0 + 3.0 * G3, z3 = z0 - 1.0 + 3.0 * G3;
+                    const ii = i & 255, jj = j & 255, kk = k & 255;
+                    let t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+                    if (t0 < 0) n0 = 0.0;
+                    else {
+                        const gi0 = this.permMod12[ii + this.perm[jj + this.perm[kk]]] * 3;
+                        t0 *= t0;
+                        n0 = t0 * t0 * (this.grad3[gi0] * x0 + this.grad3[gi0 + 1] * y0 + this.grad3[gi0 + 2] * z0);
+                    }
+                    let t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+                    if (t1 < 0) n1 = 0.0;
+                    else {
+                        const gi1 = this.permMod12[ii + i1 + this.perm[jj + j1 + this.perm[kk + k1]]] * 3;
+                        t1 *= t1;
+                        n1 = t1 * t1 * (this.grad3[gi1] * x1 + this.grad3[gi1 + 1] * y1 + this.grad3[gi1 + 2] * z1);
+                    }
+                    let t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+                    if (t2 < 0) n2 = 0.0;
+                    else {
+                        const gi2 = this.permMod12[ii + i2 + this.perm[jj + j2 + this.perm[kk + k2]]] * 3;
+                        t2 *= t2;
+                        n2 = t2 * t2 * (this.grad3[gi2] * x2 + this.grad3[gi2 + 1] * y2 + this.grad3[gi2 + 2] * z2);
+                    }
+                    let t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+                    if (t3 < 0) n3 = 0.0;
+                    else {
+                        const gi3 = this.permMod12[ii + 1 + this.perm[jj + 1 + this.perm[kk + 1]]] * 3;
+                        t3 *= t3;
+                        n3 = t3 * t3 * (this.grad3[gi3] * x3 + this.grad3[gi3 + 1] * y3 + this.grad3[gi3 + 2] * z3);
+                    }
+                    return 32.0 * (n0 + n1 + n2 + n3);
+                }
+            };
+            return SimplexNoise;
+        })();
+        const noise = new SimplexNoise();
+
+
+        // --- 1. SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('crystal-canvas'),
+            alpha: true,
+            antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        camera.position.z = 6;
+
+
+        // --- 2. LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // Point light centered on the orb to make it glow
+        const pointLight = new THREE.PointLight(0x8e2de2, 2, 100);
+        scene.add(pointLight);
+
+        // Spotlight from below to illuminate the pedestal and give an uplifted feel
+        const spotLight = new THREE.SpotLight(0x4a00e0, 20, 20, Math.PI / 4, 0.5, 2);
+        spotLight.position.set(0, -3, 0);
+        spotLight.target.position.set(0, 0, 0);
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+
+
+        // --- 3. CREATE THE ORB RIG (Orb + Pedestal + Particles) ---
+        const orbRig = new THREE.Group();
+        scene.add(orbRig);
+        orbRig.scale.set(7,7,7); // Adjust this value to change the overall size
+        // --- 3a. Orb Pedestal ---
+        const pedestalGeometry = new THREE.TorusGeometry(1.4, 0.05, 16, 100);
+        const pedestalMaterial = new THREE.MeshStandardMaterial({
+            color: 0x444444,
+            metalness: 0.9,
+            roughness: 0.2,
+        });
+        const pedestal = new THREE.Mesh(pedestalGeometry, pedestalMaterial);
+        pedestal.rotation.x = Math.PI / 2; // Orient the torus to be flat
+        orbRig.add(pedestal);
+
+        // --- 3b. Crystal Orb ---
+        const crystalMaterial = new THREE.MeshPhysicalMaterial({
+            metalness: 0.1,
+            roughness: 0.3,
+            transmission: 1.0, 
+            ior: 1.5,
+            thickness: 1.3,
+            emissiveIntensity: 1,
+            // --- CHANGE THIS ---
+            // Original: new THREE.Color(0x8e2de2)
+            color: new THREE.Color(0x4a00e0), 
+            emissive: new THREE.Color(0x4a00e0) 
+        });
+
+        // Use a sphere with enough vertices to allow for smooth noise deformation
+        const crystalGeometry = new THREE.SphereGeometry(1.2, 64, 64);
+        // Store original vertex positions to apply noise consistently
+        crystalGeometry.setAttribute('originalPosition', crystalGeometry.getAttribute('position').clone());
+
+        const crystalOrb = new THREE.Mesh(crystalGeometry, crystalMaterial);
+        crystalOrb.position.y = 1.3; // Float above the pedestal
+        orbRig.add(crystalOrb);
+
+        // --- 3c. Internal Particles ---
+        const innerParticlesCount = 300;
+        const innerParticlesGeometry = new THREE.BufferGeometry();
+        const innerPositions = new Float32Array(innerParticlesCount * 3);
+        const innerVelocities = [];
+
+        for (let i = 0; i < innerParticlesCount; i++) {
+            const vertex = new THREE.Vector3(
+                (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 2
+            );
+            // Ensure particles are within the orb's radius
+            if (vertex.length() > 1.1) {
+                vertex.normalize().multiplyScalar(1.1 * Math.random());
+            }
+            vertex.toArray(innerPositions, i * 3);
+
+            // Give each particle a random velocity
+            innerVelocities.push(
+                new THREE.Vector3((Math.random() - 0.5) * 0.005, (Math.random() - 0.5) * 0.005, (Math.random() - 0.5) * 0.005)
+            );
+        }
+        innerParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(innerPositions, 3));
+
+        const innerParticleMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.02,
+            blending: THREE.AdditiveBlending,
+            transparent: false,
+            opacity: 0.7
+        });
+
+        const innerParticles = new THREE.Points(innerParticlesGeometry, innerParticleMaterial);
+        crystalOrb.add(innerParticles); // Add inside the orb mesh
+
+        // --- 3d. Surrounding Particles (Aura) ---
+        const auraGroup = new THREE.Group();
+        orbRig.add(auraGroup);
+        const auraParticleMaterial = new THREE.SpriteMaterial({
+            color: 0x9370DB, // MediumPurple
+            map: createGlowTexture(),
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.5
+        });
+
+        for (let i = 0; i < 150; i++) {
+            const particle = new THREE.Sprite(auraParticleMaterial);
+            const radius = Math.random() * 2 + 2; // Further out
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+
+            particle.position.setFromSphericalCoords(radius, phi, theta);
+            particle.scale.set(0.05, 0.05, 0.05);
+            auraGroup.add(particle);
+        }
+
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+
+        // --- 4. ANIMATION & INTERACTION ---
+        
+        const clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(-10, -10); // Start off-screen
+        let isHovering = false;
+        let isDragging = false;
+        let isBackendRunning = false;
+        let hasBeenResized = false;
+        let lastOrbPosition = new THREE.Vector3();/////////////////////////////
+
+
+        // Color palette for the shifting effect (blues and purples)
+        const colors = [0x101C29, 0X0A1C3D, 0x23342,0x71b1642,0xce0565 ];
+        let colorIndex = 0;
+
+        // --- Idle Animation ---
+        // Rotation
+        gsap.to(orbRig.rotation, { y: Math.PI * 2, duration: 45, repeat: -1, ease: 'none' });
+        // Hovering/Bobbing motion
+        const bobbingAnimation = gsap.to(crystalOrb.position, { y: 1.4, duration: 3, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+
+        // --- Color Shifting ---
+        function shiftColor() {
+            colorIndex = (colorIndex + 1) % colors.length;
+            const newColor = new THREE.Color(colors[colorIndex]);
+            gsap.to(crystalMaterial.color, { r: newColor.r, g: newColor.g, b: newColor.b, duration: 4 });
+            gsap.to(crystalMaterial.emissive, { r: newColor.r, g: newColor.g, b: newColor.b, duration: 4 });
+            gsap.to(pointLight.color, { r: newColor.r, g: newColor.g, b: newColor.b, duration: 4 });
+        }
+        setInterval(shiftColor, 5000); // Change color every 5 seconds
+
+        function screenToWorld(x, y, camera) {
+            const ndc = new THREE.Vector2(
+                (x / window.innerWidth) * 2 - 1,
+                - (y / window.innerHeight) * 2 + 1
+            );
+
+            const vector = new THREE.Vector3(ndc.x, ndc.y, 0.5); // z = 0.5 = middle depth
+            vector.unproject(camera); // Convert from NDC to world coordinates
+
+            return vector;
+        }
+
+    function createTrailParticle(position) {
+        const particleGeometry = new THREE.BufferGeometry();
+        const posArray = new Float32Array(3);
+        position.toArray(posArray);
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // Pick a random color from the palette
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+        const particleMaterial = new THREE.PointsMaterial({
+            color: randomColor,
+            size: 100,
+            blending: THREE.AdditiveBlending,
+            transparent: false,
+            depthWrite: false,
+            opacity: 0
+        });
+
+        const particle = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particle);
+
+        // Animate the particle to fade and drift, then remove it
+        gsap.to(particle.position, {
+            x: position.x + (Math.random() - 0.5) * 2,
+            y: position.y + (Math.random() - 0.5) * 2,
+            duration: 1.5,
+            ease: "power2.out"
+        });
+
+        gsap.to(particle.material, {
+            opacity: 0,
+            duration: 1.5,
+            ease: "power1.in",
+            onComplete: () => {
+                scene.remove(particle);
+                particleGeometry.dispose();
+                particleMaterial.dispose();
+            }
+        });
+    }
+        
+    
+    function animate() {
+     requestAnimationFrame(animate);
+     const elapsedTime = clock.getElapsedTime();
+
+
+     // --- ENTRANCE ANIMATION ---
+        if (elapsedTime < 2.5) { // Control the duration of the entrance animation
+            const progress = elapsedTime / 2; // Normalize time for animation
+            const initialScale = 0.1;
+            const finalScale = 0.7;
+            const pulseScale = 0.85; // Scale for the pulse effect
+            const easeOutPower3 = gsap.parseEase("power3.out");
+            const currentScale = initialScale + (finalScale - initialScale) * easeOutPower3(progress);
+
+            orbRig.scale.set(currentScale, currentScale, currentScale);
+
+// Define a margin in pixels from the edge
+             const margin = 150; // <-- Adjust this value as needed
+            const bottomLeftWorldPos = screenToWorld(margin, window.innerHeight - margin, camera);
+            // bottomLeftWorldPos.y += -8;  // tweak if orb is too low
+            // bottomLeftWorldPos.x += 10; 
+            orbRig.position.x = easeOutPower3(progress) * bottomLeftWorldPos.x;
+            orbRig.position.y = easeOutPower3(progress) * bottomLeftWorldPos.y;
+
+            const initialRotation = Math.PI * 0.5; // Start with a different rotation
+            orbRig.rotation.y = easeOutPower3(progress) * Math.PI * 2 + (1 - easeOutPower3(progress)) * initialRotation;
+
+            if (progress > 0.95) {
+                const overshootProgress = (elapsedTime - 2) / 0.5; // Progress for the overshoot
+                if (overshootProgress < 1) {
+                    const pulseAmount = finalScale + (pulseScale - finalScale) * gsap.parseEase("power1.out")(overshootProgress);
+                    orbRig.scale.set(pulseAmount, pulseAmount, pulseAmount);
+                } else {
+                    orbRig.scale.set(finalScale, finalScale, finalScale); // Snap back to final scale
+                }
+            }
+
+        } else {
+                // --- ADD THIS ONE-TIME RESIZE ANIMATION ---
+            if (!hasBeenResized) {
+                gsap.to(orbRig.scale, {
+                    x: 0.65,
+                    y: 0.65,
+                    z: 0.65,
+                    duration: 1.5, // Duration of the shrink animation
+                    ease: "power2.inOut"
+                });
+                hasBeenResized = true; // Set flag to true so this only runs once
+            }
+            // --- REGULAR ANIMATIONS ---
+            const time = elapsedTime * 0.3;
+            const noiseFactor = 0.15;
+            const positionAttribute = crystalGeometry.getAttribute('position');
+            const originalPositionAttribute = crystalGeometry.getAttribute('originalPosition');
+
+            for (let i = 0; i < positionAttribute.count; i++) {
+                const origPos = new THREE.Vector3().fromBufferAttribute(originalPositionAttribute, i);
+                const noiseValue = noise.noise3D(origPos.x * 2 + time, origPos.y * 2, origPos.z * 2);
+                const newPos = origPos.clone().normalize().multiplyScalar(1 + noiseValue * noiseFactor);
+                positionAttribute.setXYZ(i, newPos.x, newPos.y, newPos.z);
+            }
+            positionAttribute.needsUpdate = true;
+            crystalGeometry.computeVertexNormals();
+
+            const innerPosAttr = innerParticles.geometry.getAttribute('position');
+            for (let i = 0; i < innerParticlesCount; i++) {
+                let x = innerPosAttr.getX(i) + innerVelocities [i].x;
+                let y = innerPosAttr.getY(i) + innerVelocities [i].y;
+                let z = innerPosAttr.getZ(i) + innerVelocities [i].z;
+                if (new THREE.Vector3(x, y, z).length() > 1.1) {
+                    innerVelocities [i].negate();
+                }
+                innerPosAttr.setXYZ(i, x, y, z);
+            }
+            innerPosAttr.needsUpdate = true;
+
+            auraGroup.rotation.y = elapsedTime * 0.1;
+        }
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(crystalOrb);
+
+        if (intersects.length > 0) {
+            if (!isHovering) {
+                isHovering = true;
+                document.body.style.cursor = 'pointer';
+                bobbingAnimation.pause();
+                gsap.to(crystalOrb.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.3 });
+            }
+        } else {
+            if (isHovering) {
+                isHovering = false;
+                document.body.style.cursor = 'grab';
+                bobbingAnimation.resume();
+                gsap.to(crystalOrb.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.5 });
+            }
+        }
+
+        if (isDragging) {
+        // 1. Make the orb follow the mouse
+        const worldPos = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+        // Set the orb's position to the mouse's world position
+        orbRig.position.set(worldPos.x, worldPos.y, 0); 
+
+                // Get current position
+        const currentOrbPos = orbRig.position.clone();
+
+        // Compute movement distance since last frame
+        const distanceMoved = currentOrbPos.distanceTo(lastOrbPosition);
+
+        // Emit particles only if movement is significant
+        if (distanceMoved > 0.05) {
+            const steps = Math.floor(distanceMoved / 0.05);
+            for (let i = 0; i < steps; i++) {
+                const lerpPos = new THREE.Vector3().lerpVectors(
+                    lastOrbPosition,
+                    currentOrbPos,
+                    i / steps
+                );
+                createTrailParticle(lerpPos);
+            }
+            lastOrbPosition.copy(currentOrbPos);
+        }
+
+
+        // 2. Create the particle trail from the orb's new position
+        if (Math.random() > 0.4) {
+            createTrailParticle(orbRig.position);
+        }
+    }
+
+        renderer.render(scene, camera);
+    }
+   animate();
+
+
+        // --- 5. EVENT LISTENERS ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // REPLACE your current mousemove listener with this one
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('mousedown', () => {
+                if (isHovering) {
+                    // This logic is for the click-and-drag-trail effect
+                    isDragging = true;
+                    document.body.style.cursor = 'grabbing';
+                    lastOrbPosition.copy(orbRig.position);
+
+                    // This is the NEW logic for activation/deactivation
+                    if (!isBackendRunning) {
+                        // 1. First click: Start the backend
+                        console.log("Triggering backend to START...");
+                        triggerBackend(); // This sets isBackendRunning = true
+                    } else {
+                        // 2. Second click: Stop the backend and quit the app
+                        console.log("Triggering backend to STOP and QUIT...");
+                        if (window.electron && window.electron.stopBackendAndQuit) {
+                            // Call the new function we exposed in preload.js
+                            window.electron.stopBackendAndQuit();
+                        } else {
+                            console.error("Electron API (stopBackendAndQuit) not found.");
+                        }
+                    }
+                }
+            });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                // Reset cursor based on whether we are still hovering
+                document.body.style.cursor = isHovering ? 'pointer' : 'grab';
+            }
+        });
+
+        async function triggerBackend() {
+            isBackendRunning = true;
+
+            // --- Activation Animation: Light Burst ---
+            const tl = gsap.timeline({
+                // onComplete: () => { isBackendRunning = false; }
+            });
+            tl.to(crystalMaterial, { emissiveIntensity: 15, duration: 0.15 });
+            tl.to(pointLight, { intensity: 10, duration: 0.15 }, "<");
+            tl.to(auraGroup.scale, { x: 2, y: 2, z: 2, duration: 0.5, ease: "expo.out" }, "<");
+            tl.to(auraGroup.children.map(c => c.material), { opacity: 0, duration: 0.5 }, "<");
+
+            tl.to(crystalMaterial, { emissiveIntensity: 1, duration: 0.8 }, ">-0.1");
+            tl.to(pointLight, { intensity: 2, duration: 0.8 }, "<");
+            tl.to(auraGroup.scale, { x: 1, y: 1, z: 1, duration: 1, ease: "expo.out" }, ">-0.5");
+            tl.to(auraGroup.children.map(c => c.material), { opacity: 0.5, duration: 1 }, "<");
+
+            try {
+                // This is the actual call to your backend via main.js
+                if (window.electron && window.electron.runBackend) {
+                    await window.electron.runBackend();
+                } else {
+                    console.error("Electron API not found. Cannot run backend.");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }finally {
+
+            isBackendRunning = false;
+            console.log("Backend process has finished.");
+        }
+        }
+    });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+--- Core ---
+
+# For wake word detection
+pvporcupine
+pyaudio
+
+# For speech-to-text (STT)
+SpeechRecognition
+faster-whisper  # For the r.recognize_faster_whisper() function
+
+# For text-to-speech (TTS)
+pyttsx3
+
+--- LLM / Brain ---
+
+# For connecting to the Gemini LLM
+langchain
+langchain-google-genai
+
+--- Action Modules ---
+
+# For all GUI automation (system commands, WhatsApp)
+pyautogui
+
+# For finding GUI elements by image (a dependency of pyautogui)
+opencv-python
+
+# For controlling the Chrome browser (opening sites)
+selenium
+
+# For controlling Spotify via its API
+spotipy
+
+# For checking if Spotify window is open
+pygetwindow
+
+--- Utilities ---
+
+# For checking background audio on Windows
+pycaw
+comtypes
