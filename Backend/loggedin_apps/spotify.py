@@ -3,7 +3,7 @@ from spotipy.oauth2 import SpotifyOAuth
 import subprocess
 import os
 import pygetwindow as gw
-from Personal.config import SPOTIFY_CLIENT_ID,SPOTIFY_CLIENT_SECRET,SPOTIFY_REDIRECT_URI
+from Personal.config import SPOTIFY_CLIENT_ID,SPOTIFY_CLIENT_SECRET,SPOTIFY_REDIRECT_URI,DEVICE_NAME
 spotify_path ="C:/Users/Siddharth/AppData/Roaming/Spotify/Spotify.exe"
 # import psutil ## Time taking is longer using psutil
 import time
@@ -21,7 +21,7 @@ def get_device_info():
         # speak(devices_info)
         # Iterate through devices
         for device in devices_info['devices']:
-            if device['name'] == 'DESKTOP-FESEIHA':  # Match by device name
+            if device['name'] == DEVICE_NAME :  # Match by device name
                 device_id = device['id']
                 break
         else:
