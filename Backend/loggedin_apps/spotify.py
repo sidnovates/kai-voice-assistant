@@ -3,15 +3,16 @@ from spotipy.oauth2 import SpotifyOAuth
 import subprocess
 import os
 import pygetwindow as gw
+from Personal.config import SPOTIFY_CLIENT_ID,SPOTIFY_CLIENT_SECRET,SPOTIFY_REDIRECT_URI
 spotify_path ="C:/Users/Siddharth/AppData/Roaming/Spotify/Spotify.exe"
 # import psutil ## Time taking is longer using psutil
 import time
 from speak import speak
 ##Authenticate with Spotify
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id="e3962a18e3bd448584c22dda9bf7188d",
-    client_secret="25ddb86a04614087a036963b80b3475c",
-    redirect_uri="https://kai.spotify.com",
+    client_id= SPOTIFY_CLIENT_ID ,
+    client_secret=SPOTIFY_CLIENT_SECRET,
+    redirect_uri=SPOTIFY_REDIRECT_URI,
     scope="user-read-playback-state,user-modify-playback-state,user-library-read,user-read-currently-playing"
 ))
 
