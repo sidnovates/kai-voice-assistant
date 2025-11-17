@@ -59,112 +59,153 @@ This project is built for a **Windows** environment and requires setup for *both
 git clone [https://github.com/YourUsername/Kai-Voice-Assistant.git](https://github.com/YourUsername/Kai-Voice-Assistant.git)
 cd Kai-Voice-Assistant
 
-### 2. Configure the Backend (Python)
+🚀 Backend & Frontend Setup Guide
+2. Configure the Backend (Python)
 
-*Note: This guide assumes all your Python code is inside the `Backend/` folder.*
+Note: All Python backend files should be inside the Backend/ directory.
 
-1.  **Create Virtual Environment:**
-    ```bash
-    cd Backend
-    python -m venv venv
-    venv\Scripts\activate
-    ```
+1. Create a Virtual Environment
+cd Backend
+python -m venv venv
+venv\Scripts\activate
 
-2.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+2. Install Dependencies
+pip install -r requirements.txt
 
-3.  **Configure API Keys & Personal Files:**
-    You must create and configure several files that are *not* on GitHub for security and personalization.
+3. Add Your Personal Configuration Files
 
-    * **`.gitignore`:** First, ensure the `.gitignore` file (from this repo) exists so you don't accidentally upload your keys.
+These files are intentionally NOT included in the GitHub repo (for security).
+You must create them manually on your system.
 
-    * **`Backend/Personal/config.py` (API Keys):**
-        Create this file and add your keys:
-        ```python
-        # Backend/Personal/config.py
-        GOOGLE_API_KEY = "Your_Google_AI_Studio_API_Key"
-        ACCESS_KEY = "Your_PicoVoice_Access_Key"
-        ```
+🔐 Backend/Personal/config.py (API Keys)
 
-    * **`Wake Word/` (Wake Word File):**
-        1.  Go to the [PicoVoice Console](https://console.picovoice.ai/).
-        2.  Sign up for a free account (this is required to get your `ACCESS_KEY` and train a wake word).
-        3.  Go to the **"Porcupine"** page and create a new custom wake word (e.g., "Arise Kai", "Hey Computer").
-        4.  Train and download the model. Select **"Windows"** as the platform.
-        5.  This will download a `.zip` file. Unzip it.
-        6.  Find the **`.ppn`** file inside (e.g., `Arise-Kai_en_windows_v3_0_0.ppn`).
-        7.  Place this single **`.ppn` file** inside the `Wake Word/` folder. The script will now automatically find and use it.
+Create this file:
 
-    * **`Backend/Personal/contacts.txt` (WhatsApp Contacts):**
-        Create this file and map contact names to their screenshot paths.
-        **Format:** `ContactName:path/to/image.png`
-        ```
-        Rahul:assets/whatsapp/rahul.png
-        Mom:assets_old/whatsapp/mom.png
-        ```
+# Backend/Personal/config.py
+GOOGLE_API_KEY = "Your_Google_AI_Studio_API_Key"
+ACCESS_KEY = "Your_PicoVoice_Access_Key"
 
-    * **`Backend/assets/whatsapp/` (WhatsApp GUI Assets):**
-        You must take your *own* screenshots of the WhatsApp UI elements (e.g., `search_bar.png`, `call.png`) and all contact images listed in `contacts.txt`.
-        *Note: This is very fragile and will break on UI updates or a theme change (Light/Dark mode).*
+🎤 Wake Word Configuration (Wake Word/)
 
-    * **`Backend/spotify.py` (Spotify Config):**
-        * **Device Name:** You must hardcode your Spotify device name in the `get_device_info()` function (e.g., `DESKTOP-FESEIHA`).
-        * **App Path:** You may need to update the `spotify_path` variable.
-        * **Authentication:** The first time you run it, `spotipy` will open a browser window for you to authenticate.
+Go to the PicoVoice Console → https://console.picovoice.ai
 
-### 3. Configure the Frontend (Electron)
+Create a free account
 
-1.  **Navigate to the frontend directory:**
-    ```bash
-    cd frontend/floating_mic
-    ```
-2.  **Install Node.js packages:**
-    ```bash
-    npm install
-    ```
+Open Porcupine → create your custom wake word (e.g., “Arise Kai”)
 
-## How to Run
+Train and download the model
 
-1.  **Activate the Python Environment:**
-    * Make sure your `venv` is active in one terminal:
-        ```bash
-        cd Backend
-        .\venv\Scripts\activate 
-        ```
-    *(You only need to activate it. The frontend will start the Python script for you.)*
+Choose Windows platform
 
-2.  **Start the Electron App:**
-    * In a **separate terminal**, navigate to the frontend directory:
-        ```bash
-        cd frontend/floating_mic
-        ```
-    * Run the Electron app:
-        ```bash
-        npm start
-        ```
-    * The crystal orb assistant will appear in the bottom-right corner of your screen.
+Download the .zip → unzip it
 
-## Using the Assistant
+Locate the .ppn file (e.g., Arise-Kai_en_windows_v3_0_0.ppn)
 
-The application is now running, but the voice assistant (backend) is not yet active.
+Place this single .ppn file inside:
 
-### To Start the Assistant:
-1.  **Click the orb once.**
-2.  You will see a "light burst" animation.
-3.  This action starts the `main.py` backend script. The assistant is now active and listening for its wake word.
+Wake Word/
 
-### To Stop the Assistant (Two Ways):
 
-* **Option 1: Voice Command (Keops Orb Open)**
-    1.  After activating the assistant with the wake word, say **"exit"**.
-    2.  The backend script (`main.py`) will stop running (and resume any music that was playing).
-    3.  The crystal orb will remain open and return to its idle state.
-    4.  You can click it again later to reactivate the backend.
+The backend automatically detects it.
 
-* **Option 2: Mouse Click (Closes Everything)**
-    1.  **Click the orb a second time.**
-    2.  This action will:
-        * Safely stop the backend Python script.
-        * Completely close the Electron application (the orb will disappear).
+📇 WhatsApp Contacts (Backend/Personal/contacts.txt)
+
+Create this file:
+
+Format:
+
+ContactName:path/to/image.png
+
+
+Example:
+
+Rahul:assets/whatsapp/rahul.png
+Mom:assets_old/whatsapp/mom.png
+
+
+Make sure the images exist in your assets folder.
+
+🖼️ WhatsApp UI Assets
+
+Inside:
+
+Backend/assets/whatsapp/
+
+
+Add your own screenshots of:
+
+Search bar
+
+Call button
+
+All contacts (matching contacts.txt)
+
+⚠️ These must match your WhatsApp theme (dark/light), otherwise automation breaks.
+
+🎵 Spotify Setup (Backend/spotify.py)
+
+Inside this file:
+
+Update your Spotify device name inside get_device_info()
+
+Update the Spotify app path if needed
+
+On first run, spotipy will open the browser for authentication
+
+3. Configure the Frontend (Electron)
+1. Install Node.js dependencies
+cd frontend/floating_mic
+npm install
+
+▶️ How to Run the Assistant
+1. Activate Python Environment
+cd Backend
+.\venv\Scripts\activate
+
+
+You only need to activate it. The frontend will start main.py automatically.
+
+2. Start the Electron App
+
+Open a separate terminal:
+
+cd frontend/floating_mic
+npm start
+
+
+A crystal orb will appear at the bottom-right corner of your screen.
+
+💬 Using the Assistant
+Start the Assistant
+
+Click the orb once
+
+A “light burst” animation appears
+
+The backend (main.py) starts
+
+The assistant becomes active & listens for the wake word
+
+🛑 How to Stop the Assistant
+Option 1: Voice Command (Assistant Stays Open)
+
+Activate using wake word
+
+Say:
+“exit”
+
+Backend stops
+
+Music (if paused) resumes
+
+Orb stays open (idle)
+
+Option 2: Mouse Click (Everything Closes)
+
+Click the orb a second time
+
+This will:
+
+Stop the backend
+
+Close the Electron app completely
