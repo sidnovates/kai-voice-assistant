@@ -1,25 +1,25 @@
-# Kai Voice Assistant
+# 🤖 Kai Voice Assistant
 
 Kai is a personalized, offline-first voice assistant for Windows. It uses a local wake word ("Arise Kai") and high-quality local speech-to-text to understand commands, which are then processed by a generative AI (Gemini) to perform a wide range of tasks.
 
 This project is built with a modern, modular architecture that separates listening, understanding (intent classification), and acting, and features a Three.js-powered animated frontend.
 
-## Features
+## ✨ Features
 
-* **Animated Frontend:** A floating, clickable orb powered by Electron and Three.js.
-* **Local Wake Word:** Powered by `pvporcupine` for a fast, efficient "Arise Kai" detection.
-* **High-Quality STT:** Uses `faster-whisper` for accurate, local speech-to-text.
-* **LLM-Powered Brain:** Uses Google's Gemini model (via `langchain`) to:
+* **🔮 Animated Frontend:** A floating, clickable orb powered by Electron and Three.js.
+* **👂 Local Wake Word:** Powered by `pvporcupine` for a fast, efficient "Arise Kai" detection.
+* **🎙️ High-Quality STT:** Uses `faster-whisper` for accurate, local speech-to-text.
+* **🧠 LLM-Powered Brain:** Uses Google's Gemini model (via `langchain`) to:
     1.  **Classify Intent:** Determine if you want to chat, open a site, play music, or control the system.
     2.  **Extract Entities:** Pull out the specific details, like "Spotify," "Rahul," or "scroll down."
-* **Background Music-Aware:** Automatically detects and pauses background music (e.g., on Spotify) when activated, and resumes it on "goodbye."
-* **Rich Integrations:**
-    * **Spotify:** Full control via the Spotipy API to play songs, artists, albums, and liked songs.
-    * **Web:** Opens and searches websites (YouTube, Google, Amazon, Wikipedia, etc.).
-    * **System:** Controls basic OS functions like volume, scrolling, window management, and even shutdown/restart.
-    * **WhatsApp:** (Experimental) Can send messages and initiate calls via GUI automation.
+* **⏯️ Background Music-Aware:** Automatically detects and pauses background music (e.g., on Spotify) when activated, and resumes it on "goodbye."
+* **🧩 Rich Integrations:**
+    * **🎧 Spotify:** Full control via the Spotipy API to play songs, artists, albums, and liked songs.
+    * **🌐 Web:** Opens and searches websites (YouTube, Google, Amazon, Wikipedia, etc.).
+    * **💻 System:** Controls basic OS functions like volume, scrolling, window management, and even shutdown/restart.
+    * **💬 WhatsApp:** (Experimental) Can send messages and initiate calls via GUI automation.
 
-## Project Structure
+## 📂 Project Structure
 
 * **Kai-Voice-Assistant/** (Root Directory)
     * **frontend/**
@@ -50,7 +50,7 @@ This project is built with a modern, modular architecture that separates listeni
         * `Arise-Kai...ppn`: Porcupine wake word file
     * `.gitignore`: Tells Git which files to ignore
 
-## Setup & Installation
+## 🛠️ Setup & Installation
 
 This project is built for a **Windows** environment and requires setup for *both* the backend and frontend.
 
@@ -126,7 +126,7 @@ cd Kai-Voice-Assistant
     npm install
     ```
 
-## How to Run
+## 🚀 How to Run
 
 1.  **Activate the Python Environment:**
     * Make sure your `venv` is active in one terminal:
@@ -147,7 +147,7 @@ cd Kai-Voice-Assistant
         ```
     * The crystal orb assistant will appear in the bottom-right corner of your screen.
 
-## Using the Assistant
+## 💡 Using the Assistant
 
 The application is now running, but the voice assistant (backend) is not yet active.
 
