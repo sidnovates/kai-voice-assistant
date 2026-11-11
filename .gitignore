@@ -1,43 +1,42 @@
---- System & IDE ---
+# --- System & IDE ---
 .vscode/
 .idea/
 
---- Python ---
+# --- Python ---
 
-Virtual Environments
+# Virtual Environments
 venv/
 .venv/
 
-Python Cache
-This correctly finds pycache folders anywhere in the project
-**/pycache/
+# Python Cache
+**/__pycache__/
 *.pyc
 
---- Node.js ---
+# --- Node.js ---
 
-Node modules
+# Node modules
 frontend/floating_mic/node_modules/
 
---- Project Specific Ignores ---
+# --- Project Specific Ignores ---
 
-Personal GUI screenshots for WhatsApp
-This ignores the entire 'assets' folder inside 'Backend' as requested
+# Personal GUI screenshots for WhatsApp
 Backend/assets/
 
-API keys and personal data
-This ignores the entire 'Personal' folder, which is cleaner
+# API keys and personal data
 Backend/Personal/
 
-Test folder
+# Test folder
 Backend/tests/
 test
 
-Porcupine wake word file (proprietary to your account)
+# Porcupine wake word file (proprietary to your account)
 *.ppn
 Wake Word/
 
-Screenshots created by the assistant
+# Screenshots created by the assistant
 screenshot.png
 
-Spotify auth cache
+# Spotify auth cache
 .cache
+
+config.example.py

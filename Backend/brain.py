@@ -1,5 +1,12 @@
 import os
-from Personal.config import GOOGLE_API_KEY
+try:
+    from Personal.config import GOOGLE_API_KEY
+except ImportError:
+    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+
+if GOOGLE_API_KEY:
+    os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from speak import speak
@@ -7,21 +14,29 @@ import pyautogui ##Use for taking control of mouse and keyboard
 from loggedin_apps.whatsapp import message, voice_call, video_call
 import time
 from typing import Annotated
-from typing_extensions import TypedDict
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 from loggedin_apps.site import open_site
 import difflib
 import loggedin_apps.spotify as spfun
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
-# Initialize Gemini LLM
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+# Initialize Gemini LLM (using flash-lite for ultra-low latency voice intent routing)
+llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0)
 
 
 #################
 ##This is used to classify the original prompt given by user to identify whether the user wants to make a call, or play a song in spotify or open a site or do some keyboard related stuff or just chit-chat with ai
 prompt_refine = ChatPromptTemplate.from_messages([
-    ("system", "You are an intelligent assistant who analysis the prompt and classifies it based on the action and assigns a number.Now if the user wants to just chit-chat with the assistant then check the prompt if there are any meaningless words.If the user wants perform a specific action like 'open a site' or 'play a music', then give the number according to below:\n1.If the user wants to send a message or video or voice call a person then output is '1',if asked to open a site then '2', if user asks to play a music or any music related stuff like 'stop the music' or 'play next track' and no specific site or anything is mentioned then '3', if asked for some specific commands to be performed screen-related or keyboard related like increase the volume or move the page down or any such stuff then '4' and if the user just wants to chit-chat then return '5'"),
+    ("system", "You are an intelligent voice assistant prompt classifier. Analyze the user's input and classify it into exactly one of the following numeric categories:\n"
+               "1 -> WhatsApp actions: sending a WhatsApp message, voice call, or video call to someone.\n"
+               "2 -> Web navigation: opening or searching websites (e.g. YouTube, Google, Amazon, Wikipedia, GitHub, StackOverflow, etc.).\n"
+               "3 -> Spotify & Music: playing songs, tracks, artists, albums, playlists, liked songs, or controlling music playback (pause, resume, next, previous), whether Spotify is explicitly named or implied.\n"
+               "4 -> System & OS commands: controlling system volume, mute, scrolling the page, tab/window controls, screenshot, task manager, file explorer, locking, sleeping, or shutting down.\n"
+               "5 -> Conversational chat: general questions, facts, greetings, jokes, emotions, or small talk.\n"
+               "Respond with ONLY the single digit (1, 2, 3, 4, or 5)."),
     ("human", "{input}")
 ])
 
@@ -31,10 +46,20 @@ prompt_refine = ChatPromptTemplate.from_messages([
 #     ("human", "{input}")
 # ])
 
+import re
+
 def prompt_refiner(command):
-    chain = prompt_refine |llm
-    response = chain.invoke({"input":command})
-    return response.content
+    chain = prompt_refine | llm
+    response = chain.invoke({"input": command})
+    raw = str(response.content).strip()
+    # Search for digit 1-5 even if the LLM adds punctuation, whitespace or explanations
+    match = re.search(r'\b([1-5])\b', raw)
+    if match:
+        return match.group(1)
+    for char in raw:
+        if char in '12345':
+            return char
+    return '5'
 
 #################
 
@@ -216,42 +241,57 @@ def handle_command(command):
         refine=prompt_refiner(command)
         print("Refined Version: ",refine)
         # if "whatsapp" in command:
-        if refine=='1':
+        if refine == '1':
             reply = whatsapp(command)
-            print(reply)
-            try:
-
-
-                if reply is not None:
-                    # Load contacts with their image paths
+            print("WhatsApp extraction:", reply)
+            if reply is not None and reply.get('contact'):
+                target_contact = reply['contact'].strip().lower()
+                reply['image_path'] = None
+                try:
+                    # Load contacts with their image paths (robust path resolution)
+                    script_dir = os.path.dirname(os.path.abspath(__file__))
+                    contacts_file = os.path.join(script_dir, "Personal", "contacts.txt")
                     contact_images = {}
-                    with open("Personal/contacts.txt", "r") as f:
-                        for line in f:
-                            if ":" in line:
-                                name, path = line.strip().split(":")
-                                contact_images[name.lower()] = path
+                    if os.path.exists(contacts_file):
+                        with open(contacts_file, "r") as f:
+                            for line in f:
+                                if ":" in line:
+                                    name, path = line.strip().split(":", 1)
+                                    contact_images[name.strip().lower()] = path.strip()
 
-                    # Get list of contact names
                     contacts = list(contact_images.keys())
-                    print(contacts)
-                    # Find the closest match
-                    close_match = difflib.get_close_matches(reply['contact'].lower(), contacts, n=1, cutoff=0.6)
-                    
-                    if close_match:
-                        reply['contact'] = close_match[0]
-                        reply['image_path'] = contact_images[close_match[0]]
-                        print(reply)
-                    else:
-                        print("No close match found for contact.")
+                    print("Available contacts:", contacts)
 
-            except Exception as e:
-                print(e)
-            if reply is not None and reply['action']==1:
-                message(reply['contact'],reply['message'],reply['image_path'])
-            elif  reply is not None and reply['action']==2:
-                video_call(reply['contact'],reply['image_path'])
-            elif reply is not None and reply['action']==3:
-                voice_call(reply['contact'],reply['image_path'])
+                    # Prefer exact match first to prevent false matches (e.g., Rahil -> Rahul)
+                    if target_contact in contact_images:
+                        reply['contact'] = target_contact
+                        reply['image_path'] = contact_images[target_contact]
+                        print("Exact match found:", reply['contact'])
+                    else:
+                        # Use a strict cutoff of 0.85 to avoid wrong person resolution
+                        close_match = difflib.get_close_matches(target_contact, contacts, n=1, cutoff=0.85)
+                        if close_match:
+                            reply['contact'] = close_match[0]
+                            reply['image_path'] = contact_images[close_match[0]]
+                            print("Strict fuzzy match found:", reply['contact'])
+                        else:
+                            print(f"No reliable match for contact: {reply['contact']}")
+                            speak(f"Sorry, I couldn't find {reply['contact']} in your contacts list.")
+                except Exception as e:
+                    print("Error loading contacts:", e)
+                    speak("Could not access the contacts file.")
+
+                if reply.get('image_path'):
+                    if not os.path.exists(reply['image_path']):
+                        speak(f"Asset image for {reply['contact']} does not exist at {reply['image_path']}.")
+                    elif reply['action'] == 1:
+                        message(reply['contact'], reply['message'], reply['image_path'])
+                    elif reply['action'] == 2:
+                        voice_call(reply['contact'], reply['image_path'])
+                    elif reply['action'] == 3:
+                        video_call(reply['contact'], reply['image_path'])
+            else:
+                speak("Sorry, I could not understand who you want to contact.")
         
         # elif "spotify" in command:
         elif refine=='3':

@@ -11,25 +11,21 @@ r.dynamic_energy_threshold = True ## Adjusts the energy threshold dynamically
 
 
 def listen():
-
+    print("🎤 Listening... Speak now.")
     # Get mic input
     with sr.Microphone() as source:
-        print(" Say something...")
-        speak("Speak..")
-        #  Start timing for listening
-        # listen_start = time.time()
-        audio = r.listen(source,timeout=None, phrase_time_limit=None)
-        
-        # listen_end = time.time()
-        # print(f" Listening time: {listen_end - listen_start:.2f} seconds")
+        audio = r.listen(source, timeout=None, phrase_time_limit=None)
 
     try:
-        #  Start timing for transcription
-        # transcribe_start = time.time()
-
-        ##Made changes in faster_whisper.py file to fit compute_type
-        # Use Faster Whisper with batching
-        text = r.recognize_faster_whisper(audio,language="en")
+        # Check if customized faster-whisper method exists, fallback gracefully
+        if hasattr(r, "recognize_faster_whisper"):
+            text = r.recognize_faster_whisper(audio, language="en")
+        elif hasattr(r, "recognize_whisper"):
+            text = r.recognize_whisper(audio, language="en")
+        else:
+            text = r.recognize_google(audio)
+        print("You said:", text)
+        return text.lower()
         # transcribe_end = time.time()
         # print(f" Transcription time: {transcribe_end - transcribe_start:.2f} seconds")
         print("You said:", text)

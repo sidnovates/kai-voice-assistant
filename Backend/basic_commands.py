@@ -2,12 +2,28 @@ import pyautogui
 from speak import speak
 import os
 
+def confirm_action(action_name):
+    speak(f"Are you sure you want to {action_name}? Please say yes to confirm.")
+    try:
+        from listen import listen
+        response = listen()
+        clean = response.strip().lower()
+        if any(affirm in clean for affirm in ["yes", "yeah", "confirm", "sure", "do it", "yep"]):
+            return True
+        else:
+            speak("Action cancelled.")
+            return False
+    except Exception as e:
+        print(f"Confirmation error: {e}")
+        speak("Action cancelled.")
+        return False
+
 def basic_commands(action_no):
     if action_no == 1:
-        pyautogui.scroll(500)
+        pyautogui.scroll(-500)
         speak("Scrolling down")
     elif action_no == 2:
-        pyautogui.scroll(-500)
+        pyautogui.scroll(500)
         speak("Scrolling up")
     elif action_no == 3:
         pyautogui.press("space")
@@ -36,7 +52,9 @@ def basic_commands(action_no):
         pyautogui.hotkey('ctrl', 't')
 
     elif action_no == 12:     # Close Window (Alt + F4)
-        pyautogui.hotkey('alt', 'f4')
+        if confirm_action("close the active window"):
+            speak("Closing window")
+            pyautogui.hotkey('alt', 'f4')
 
     elif action_no == 13:     # Minimize Window (Win + Down)
         pyautogui.hotkey('win', 'down')
@@ -63,16 +81,22 @@ def basic_commands(action_no):
         pyautogui.press('volumeup')
 
     elif action_no == 21:     # Shutdown
-        os.system("shutdown /s /t 1")  # Windows only
+        if confirm_action("shut down the computer"):
+            speak("Shutting down the computer.")
+            os.system("shutdown /s /t 1")
 
     elif action_no == 22:     # Restart
-        os.system("shutdown /r /t 1")  # Windows only
+        if confirm_action("restart the computer"):
+            speak("Restarting the computer.")
+            os.system("shutdown /r /t 1")
 
     elif action_no == 23:     # Lock Screen
         os.system("rundll32.exe user32.dll,LockWorkStation")  # Windows only
 
     elif action_no == 24:     # Sleep (requires privileges)
-        os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+        if confirm_action("put the computer to sleep"):
+            speak("Putting computer to sleep.")
+            os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
 
     elif action_no == 25:     # Open Task Manager
         pyautogui.hotkey('ctrl', 'shift', 'esc')

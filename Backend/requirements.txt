@@ -1,4 +1,4 @@
---- Core ---
+# --- Core ---
 
 # For wake word detection
 pvporcupine
@@ -11,13 +11,13 @@ faster-whisper  # For the r.recognize_faster_whisper() function
 # For text-to-speech (TTS)
 pyttsx3
 
---- LLM / Brain ---
+# --- LLM / Brain ---
 
 # For connecting to the Gemini LLM
 langchain
 langchain-google-genai
 
---- Action Modules ---
+# --- Action Modules ---
 
 # For all GUI automation (system commands, WhatsApp)
 pyautogui
@@ -34,7 +34,7 @@ spotipy
 # For checking if Spotify window is open
 pygetwindow
 
---- Utilities ---
+# --- Utilities ---
 
 # For checking background audio on Windows
 pycaw

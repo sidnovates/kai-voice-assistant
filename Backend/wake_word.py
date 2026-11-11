@@ -6,27 +6,43 @@ import struct
 import os
 import glob # <-- Import glob to find files
 import sys  # <-- Import sys to exit on error
-from Personal.config import ACCESS_KEY
+try:
+    from Personal.config import ACCESS_KEY
+except ImportError:
+    ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
 
 # Path to the directory containing the .ppn file
 WAKE_WORD_DIR = "Wake Word/"
 
 def get_keyword_path():
     """Finds and validates the .ppn file in the Wake Word directory."""
-    
-    # Look for any file ending in .ppn in the directory
-    pattern = os.path.join(WAKE_WORD_DIR, "*.ppn")
-    keyword_files = glob.glob(pattern)
+    # Look across current directory, parent directory, and relative to script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidate_dirs = [
+        "Wake Word",
+        os.path.join("..", "Wake Word"),
+        os.path.join(script_dir, "Wake Word"),
+        os.path.join(script_dir, "..", "Wake Word")
+    ]
+
+    keyword_files = []
+    for d in candidate_dirs:
+        if os.path.exists(d):
+            pattern = os.path.join(d, "*.ppn")
+            found = glob.glob(pattern)
+            if found:
+                keyword_files = found
+                break
 
     # --- Error Handling ---
     if len(keyword_files) == 0:
-        print(f"❌ FATAL ERROR: No .ppn wake word file found in '{WAKE_WORD_DIR}'.")
+        print(f"❌ FATAL ERROR: No .ppn wake word file found in candidate directories: {candidate_dirs}")
         print("---")
         print("To fix this:")
         print("1. Go to https://console.picovoice.ai/")
         print("2. Create a custom wake word (e.g., 'Arise Kai').")
         print(f"3. Download the '.ppn' file for 'Windows'.")
-        print(f"4. Place that single file inside the '{WAKE_WORD_DIR}' folder.")
+        print(f"4. Place that single file inside the 'Wake Word/' folder.")
         print("---")
         sys.exit(1) # Force exit the program
     

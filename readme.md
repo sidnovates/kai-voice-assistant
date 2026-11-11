@@ -81,12 +81,20 @@ cd Kai-Voice-Assistant
 
     * **`.gitignore`:** First, ensure the `.gitignore` file (from this repo) exists so you don't accidentally upload your keys.
 
-    * **`Backend/Personal/config.py` (API Keys):**
-        Create this file and add your keys:
+    * **`Backend/Personal/config.py` (API Keys & Config):**
+        Copy the example configuration file to get started:
+        ```bash
+        copy Backend\config.example.py Backend\Personal\config.py
+        ```
+        Then open `Backend/Personal/config.py` and add your credentials:
         ```python
         # Backend/Personal/config.py
         GOOGLE_API_KEY = "Your_Google_AI_Studio_API_Key"
         ACCESS_KEY = "Your_PicoVoice_Access_Key"
+        SPOTIFY_CLIENT_ID = "Your_Spotify_Client_ID"
+        SPOTIFY_CLIENT_SECRET = "Your_Spotify_Client_Secret"
+        SPOTIFY_REDIRECT_URI = "http://127.0.0.1:9090"
+        DEVICE_NAME = "Your_Spotify_Device_Name"
         ```
 
     * **`Wake Word/` (Wake Word File):**
@@ -96,24 +104,23 @@ cd Kai-Voice-Assistant
         4.  Train and download the model. Select **"Windows"** as the platform.
         5.  This will download a `.zip` file. Unzip it.
         6.  Find the **`.ppn`** file inside (e.g., `Arise-Kai_en_windows_v3_0_0.ppn`).
-        7.  Place this single **`.ppn` file** inside the `Wake Word/` folder. The script will now automatically find and use it.
+        7.  Place this single **`.ppn` file** inside the `Wake Word/` folder. The script will automatically search for it across project directories.
 
     * **`Backend/Personal/contacts.txt` (WhatsApp Contacts):**
-        Create this file and map contact names to their screenshot paths.
+        Copy `Backend/contacts.example.txt` to `Backend/Personal/contacts.txt` and map contact names to their screenshot paths.
         **Format:** `ContactName:path/to/image.png`
         ```
         Rahul:assets/whatsapp/rahul.png
-        Mom:assets_old/whatsapp/mom.png
+        Mom:assets/whatsapp/mom.png
         ```
 
     * **`Backend/assets/whatsapp/` (WhatsApp GUI Assets):**
-        You must take your *own* screenshots of the WhatsApp UI elements (e.g., `search_bar.png`, `call.png`) and all contact images listed in `contacts.txt`.
+        You must take your *own* screenshots of the WhatsApp UI elements (e.g., `search_bar.png`, `call.png`, `video.png`) and all contact images listed in `contacts.txt`.
         *Note: This is very fragile and will break on UI updates or a theme change (Light/Dark mode).*
 
-    * **`Backend/spotify.py` (Spotify Config):**
-        * **Device Name:** You must hardcode your Spotify device name in the `get_device_info()` function (e.g., `DESKTOP-FESEIHA`).
-        * **App Path:** You may need to update the `spotify_path` variable.
-        * **Authentication:** The first time you run it, `spotipy` will open a browser window for you to authenticate.
+    * **Spotify Integration:**
+        * The assistant automatically discovers your Spotify installation path from `%APPDATA%`.
+        * The first time you play music, `spotipy` will open a browser window for you to authenticate your account.
 
 ### 3. Configure the Frontend (Electron)
 
@@ -125,6 +132,19 @@ cd Kai-Voice-Assistant
     ```bash
     npm install
     ```
+
+## 📊 Evaluation & Benchmarking
+
+To benchmark the assistant's intent classification accuracy, slot error rate, and P50/P90 inference latencies:
+
+```bash
+# Run benchmark in offline/mock mode:
+python Backend/evals/eval_runner.py --mode mock
+
+# Run benchmark live against Gemini 2.0 Flash:
+python Backend/evals/eval_runner.py --mode live
+```
+The full report and generated resume bullet points are saved automatically to `Backend/evals/eval_report.md`.
 
 ## 🚀 How to Run
 

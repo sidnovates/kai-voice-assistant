@@ -3,18 +3,36 @@ from spotipy.oauth2 import SpotifyOAuth
 import subprocess
 import os
 import pygetwindow as gw
-from Personal.config import SPOTIFY_CLIENT_ID,SPOTIFY_CLIENT_SECRET,SPOTIFY_REDIRECT_URI,DEVICE_NAME
-spotify_path ="C:/Users/Siddharth/AppData/Roaming/Spotify/Spotify.exe"
+try:
+    from Personal.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI, DEVICE_NAME
+except ImportError:
+    SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", "")
+    SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")
+    SPOTIFY_REDIRECT_URI = os.environ.get("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:9090")
+    DEVICE_NAME = os.environ.get("DEVICE_NAME", "")
+default_spotify = os.path.join(os.environ.get("APPDATA", ""), "Spotify", "Spotify.exe")
+spotify_path = default_spotify if os.path.exists(default_spotify) else "C:/Users/Siddharth/AppData/Roaming/Spotify/Spotify.exe"
 # import psutil ## Time taking is longer using psutil
 import time
 from speak import speak
-##Authenticate with Spotify
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id= SPOTIFY_CLIENT_ID ,
-    client_secret=SPOTIFY_CLIENT_SECRET,
-    redirect_uri=SPOTIFY_REDIRECT_URI,
-    scope="user-read-playback-state,user-modify-playback-state,user-library-read,user-read-currently-playing"
-))
+## Lazy Spotify initialization (prevents blocking on import if keys are not set)
+class LazySpotify:
+    _instance = None
+
+    def __getattr__(self, name):
+        if self._instance is None:
+            if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+                raise ValueError("Spotify credentials not configured in Personal/config.py")
+            self._instance = spotipy.Spotify(auth_manager=SpotifyOAuth(
+                client_id=SPOTIFY_CLIENT_ID,
+                client_secret=SPOTIFY_CLIENT_SECRET,
+                redirect_uri=SPOTIFY_REDIRECT_URI,
+                scope="user-read-playback-state,user-modify-playback-state,user-library-read,user-read-currently-playing",
+                open_browser=False
+            ))
+        return getattr(self._instance, name)
+
+sp = LazySpotify()
 
 def get_device_info():
         devices_info = sp.devices()
@@ -40,7 +58,7 @@ def check_open():
         result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Spotify.exe"],capture_output=True, text=True)
         if ("Spotify.exe" not in result.stdout): ##Time taken= 1.376642 s
             subprocess.Popen(spotify_path)
-        for window in gw.getWindowsWithTitle('Spotify Premium'):
+        for window in gw.getWindowsWithTitle('Spotify'):
             window.minimize()
         time.sleep(1.5)
         return get_device_info()
@@ -49,9 +67,14 @@ def check_open():
 def search_song(query):
     device_id=check_open()
     results = sp.search(query, type="track", limit=1)
-    track = results["tracks"]["items"][0]
+    tracks = results.get("tracks", {}).get("items", [])
+    if not tracks:
+        speak("Sorry, I couldn't find that song on Spotify.")
+        return
+    track = tracks[0]
     uri = track["uri"]
-    speak(("Found:", track["name"], "by", track["artists"][0]["name"]))
+    artist_name = track["artists"][0]["name"] if track.get("artists") else "Unknown Artist"
+    speak(f"Found: {track['name']} by {artist_name}")
     # Start playing (make sure Spotify app is running & a device is active)
     sp.start_playback(device_id=device_id,uris=[uri])
 
@@ -96,20 +119,22 @@ def get_current_track():
 def search_album(album_name):
     device_id=check_open()
     results = sp.search(q=album_name, type='album', limit=1)
-    if results['albums']['items']:
-        album_uri = results['albums']['items'][0]['uri']
+    items = results.get('albums', {}).get('items', [])
+    if items:
+        album_uri = items[0]['uri']
         sp.start_playback(device_id=device_id, context_uri=album_uri)
-        speak(f"Playing album: {results['albums']['items'][0]['name']}")
+        speak(f"Playing album: {items[0]['name']}")
     else:
         speak("Album not found.")
 
 def search_artist(artist_name):
     device_id=check_open()
     results = sp.search(q=artist_name, type='artist', limit=1)
-    if results['artists']['items']:
-        artist_uri = results['artists']['items'][0]['uri']
+    items = results.get('artists', {}).get('items', [])
+    if items:
+        artist_uri = items[0]['uri']
         sp.start_playback(device_id=device_id, context_uri=artist_uri)
-        speak(f"Playing songs by: {results['artists']['items'][0]['name']}")
+        speak(f"Playing songs by: {items[0]['name']}")
     else:
         speak("Artist not found.")
 

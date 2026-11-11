@@ -1,0 +1,8 @@
+# Backend/Personal/contacts.txt template
+# Format: ContactName:path/to/screenshot.png
+# Place your contacts in Backend/Personal/contacts.txt
+
+Rahul:assets/whatsapp/rahul.png
+Mom:assets/whatsapp/mom.png
+Priya:assets/whatsapp/priya.png
+

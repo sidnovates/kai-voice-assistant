@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain,screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn } = require('child_process'); // To run external scripts
 
 let activePythonProcess = null;
@@ -41,7 +42,9 @@ ipcMain.handle('run-backend', () => {
   console.log('Main Process: Received request to run backend.');
   
   const pythonScriptPath = path.join(__dirname, '..', '..', 'Backend', 'main.py');
-  const pythonVenvPath = path.join(__dirname, '..', '..', 'Backend', 'venv', 'Scripts', 'python.exe');
+  const rootVenvPath = path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe');
+  const backendVenvPath = path.join(__dirname, '..', '..', 'Backend', 'venv', 'Scripts', 'python.exe');
+  const pythonVenvPath = fs.existsSync(rootVenvPath) ? rootVenvPath : backendVenvPath;
   const backendWorkingDirectory = path.join(__dirname, '..', '..', 'Backend');
 
   return new Promise((resolve, reject) => {
@@ -98,7 +101,11 @@ ipcMain.on('stop-backend-and-quit', () => {
   if (activePythonProcess) {
     try {
       console.log('Killing active backend process...');
-      activePythonProcess.kill(); // Send kill signal to the Python process
+      if (process.platform === 'win32' && activePythonProcess.pid) {
+        spawn('taskkill', ['/pid', activePythonProcess.pid.toString(), '/f', '/t']);
+      } else {
+        activePythonProcess.kill();
+      }
       activePythonProcess = null;
     } catch (e) {
       console.error("Failed to kill process:", e);
